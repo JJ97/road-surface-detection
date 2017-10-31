@@ -2,8 +2,8 @@
 /books/*
 /ignore/*
 /libs/*
-/left-images/*
-/right-images/*
+*/left-images/*
+*/right-images/*
 mil.csv
 __pycache__/
 .idea/
