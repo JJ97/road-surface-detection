@@ -8,7 +8,7 @@
 
 # Author : Toby Breckon, toby.breckon@durham.ac.uk
 
-# Copyright (c) 2017 Deparment of Computer Science,
+# Copyright (c) 2017 Department of Computer Science,
 #                    Durham University, UK
 # License : LGPL - http://www.gnu.org/licenses/lgpl.html
 
@@ -20,7 +20,7 @@ import numpy as np
 
 # where is the data ? - set this to where you have it
 
-master_path_to_dataset = "/tmp/TTBB-durham-02-10-17-sub10"; # ** need to edit this **
+master_path_to_dataset = "/Users/john/Documents/SSA/computer vision/computer-vision-assignment/dataset"; # ** need to edit this **
 directory_to_cycle_left = "left-images";     # edit this if needed
 directory_to_cycle_right = "right-images";   # edit this if needed
 
@@ -82,7 +82,7 @@ for filename_left in left_file_list:
     print(full_path_filename_right);
     print();
 
-    # check the file is a PNG file (left) and check a correspondoning right image
+    # check the file is a PNG file (left) and check a corresponding right image
     # actually exists
 
     if ('.png' in filename_left) and (os.path.isfile(full_path_filename_right)) :
@@ -125,8 +125,6 @@ for filename_left in left_file_list:
 
         _, disparity = cv2.threshold(disparity,0, max_disparity * 16, cv2.THRESH_TOZERO);
         disparity_scaled = (disparity / 16.).astype(np.uint8);
-
-        # disparity_scaled = (disparity / 16.).astype(np.uint8) + abs(disparity.min())
 
         # crop disparity to chop out left part where there are with no disparity
         # as this area is not seen by both cameras and also
