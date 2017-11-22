@@ -2,51 +2,84 @@ import numpy as np
 import math
 import random
 
-CONSENSUS_THRESHOLD = 2000
+CONSENSUS_THRESHOLD = 2000 # number of consensus points required for a plane to be considered
+ITERATIONS = 200 # number of ransac iterations to run each time
+MAX_INLIER_DISTANCE = 0.1 # consider all points within this distance to be inliers
 
-MAX_INLIER_DISTANCE = 0.1
 
-def ransac(points, iterations):
-    # sample = points[random.sample(range(len(points)), 100000)]
-    sample = points
-    (best_plane, best_consensus) = ([], [])
-    for _ in range(iterations):
-        (plane, consensus) = fit_plane(sample)
+def ransac(points, previous_plane):
+    """ Fit a plane to a set of 3D points using RANdom SAmple and Consensus
+
+    Arguments:
+        points         -- list of 3D points
+        previous_plane -- best plane estimate for previous pair of images
+                          used to improve results by considering an average
+                          between this and best ransac plane found for current image pair
+    """
+    # this can actually happen if you downsample significantly
+    if (len(points) < 3):
+        return []
+
+    (best_normal, best_plane, best_consensus) = ([], [] ,[])
+    for _ in range(ITERATIONS):
+        # randomly select a plane and return its normal and list of consensus points
+        (normal, plane, consensus) = fit_plane(points)
+        # update best plane estimate if number of consensus points is sufficiently high
         if (len(consensus) > CONSENSUS_THRESHOLD and len(consensus) > len(best_consensus)):
-            (best_plane, best_consensus) = (plane, consensus)
+            (best_normal, best_plane, best_consensus) = (normal,  plane, consensus)
 
-    return best_consensus
+    # consider an average between best plane for this image pair and its predecessor
+    if (previous_plane != []):
+        # create the average plane from the midpoints of their X,Y,Z components
+        average_plane = []
+        for p,q in zip(best_plane, previous_plane):
+            midpoint =  [(min(a,b) + (max(a,b) - min(a,b))/2)  for a,b in zip(p,q)]
+            average_plane.append(midpoint)
+        #
+        (normal, plane, consensus) = fit_plane(points, average_plane)
+        if (len(consensus) > CONSENSUS_THRESHOLD and len(consensus) > len(best_consensus)):
+            (best_normal, best_plane, best_consensus) = (normal, plane, consensus)
+
+    return best_normal, best_plane, best_consensus
 
 
-# equation of a plane in python hints (incomplete)
-# aimed at 2017/18 L3 SSA students at DU
-def fit_plane(points):
-    # how to - select 3 non-colinear points
-    cross_product_check = np.array([0,0,0]);
-    while np.all(cross_product_check == 0):
-        (P1,P2,P3) = points[random.sample(range(len(points)), 3)]
-        # make sure they are non-collinear
-        cross_product_check = np.cross(P1-P2, P2-P3);
+def fit_plane(points, plane=[]):
+    """ 3D plane fitting taken from DUO
+        Modified to reject vertical planes and return consensus points
+
+    Arguments:
+        points -- list of 3D points
+        plane  -- 3D plane to be tested
+    """
+    # if plane is not supplied, randomly select one from points
+    if (plane == []):
+        cross_product_check = np.array([0,0,0])
+        while np.all(cross_product_check == 0):
+            (P1,P2,P3) = points[random.sample(range(len(points)), 3)]
+            # make sure they are non-collinear
+            cross_product_check = np.cross(P1-P2, P2-P3);
+    else:
+        (P1, P2, P3) = plane
 
     # how to - calculate plane coefficients from these points
-
-    coefficients_abc = np.dot(np.linalg.inv(np.array([P1,P2,P3])), np.ones([3,1]))
+    try:
+        coefficients_abc = np.dot(np.linalg.inv(np.array([P1,P2,P3])), np.ones([3,1]))
+    except np.linalg.linalg.LinAlgError:
+        return ([], [], [])
 
     # check plane is roughly horizontal
+    # used to prevent fitting of sides of cars, hedges etc
     if (coefficients_abc[1] < 0.5):
-        return ([],[])
+        return ([],[],[])
 
-    coefficient_d = math.sqrt(coefficients_abc[0]*coefficients_abc[0]+coefficients_abc[1]*coefficients_abc[1]+coefficients_abc[2]*coefficients_abc[2])
+    coefficient_d = np.linalg.norm(coefficients_abc)
 
-    # how to - measure distance of all points from plane given the plane coefficients calculated
-
-    # dist = abs((np.dot(sample, coefficients_abc) - 1)/coefficient_d)
-
+    # extract list of points that are within MAX_INLIER_DISTANCE of the plane
     dist = abs((np.dot(points, coefficients_abc) - 1)/coefficient_d)
     (row, _ )= np.where(dist < MAX_INLIER_DISTANCE)
     inliers = points[row]
-    # avg_dist = np.average(dist[row])
 
-    return (np.array([P1,P2,P3]), inliers)
+    normal = coefficients_abc / coefficient_d
+    return (normal, [P1,P2,P3], inliers)
 
 ############################################
