@@ -2,7 +2,7 @@ import numpy as np
 import cv2
 
 # lower and upper bounds for defining 'green' when masking for vegetation
-LOWER_GREEN = np.array([40, 50, 60])
+LOWER_GREEN = np.array([40, 60, 60])
 UPPER_GREEN = np.array([80, 255, 255])
 
 def downsample(left, right, rate):

@@ -17,8 +17,8 @@ def ransac(points, previous_plane):
                           between this and best ransac plane found for current image pair
     """
     # this can actually happen if you downsample significantly
-    if (len(points) < 3):
-        return []
+    if (len(points) < 4):
+        return None, None, None
 
     (best_normal, best_plane, best_consensus) = ([], [] ,[])
     for _ in range(ITERATIONS):
@@ -35,7 +35,7 @@ def ransac(points, previous_plane):
         for p,q in zip(best_plane, previous_plane):
             midpoint =  [(min(a,b) + (max(a,b) - min(a,b))/2)  for a,b in zip(p,q)]
             average_plane.append(midpoint)
-        #
+        # use the average plane if it has a better consensus
         (normal, plane, consensus) = fit_plane(points, average_plane)
         if (len(consensus) > CONSENSUS_THRESHOLD and len(consensus) > len(best_consensus)):
             (best_normal, best_plane, best_consensus) = (normal, plane, consensus)
@@ -80,6 +80,7 @@ def fit_plane(points, plane=[]):
     inliers = points[row]
 
     normal = coefficients_abc / coefficient_d
+    normal = normal.flatten()
     return (normal, [P1,P2,P3], inliers)
 
 ############################################

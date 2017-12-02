@@ -40,6 +40,9 @@ def calculate_disparity(left_image, right_image):
     grayL = cv2.cvtColor(left_image, cv2.COLOR_BGR2GRAY)
     grayR = cv2.cvtColor(right_image, cv2.COLOR_BGR2GRAY)
 
+    grayL = np.power(grayL, 0.75).astype('uint8')
+    grayR = np.power(grayR, 0.75).astype('uint8')
+
     # compute disparity image from undistorted and rectified stereo images
     # that we have loaded
     # (which for reasons best known to the OpenCV developers is returned scaled by 16)
